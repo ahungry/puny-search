@@ -13,8 +13,9 @@
 
 #define MAX_ENQUEUED 20
 #define BUF_LEN 512
+#define MAX_HTML_FILE_SIZE 4096
 #define PORT_STR "12321"
-#define LOCATE_CMD "/usr/bin/locate -l 10 -A "
+#define LOCATE_CMD "/usr/bin/locate -l 30 -A "
 
 /**
  * Send out the successful HTTP header
@@ -39,7 +40,7 @@ void http_send_header_success (int csock)
 void http_send_file_contents (char file_name[10], int csock)
 {
   int i = 0;
-  char ch, content[500];
+  char ch, content[MAX_HTML_FILE_SIZE];
 
   FILE *fp;
 
@@ -184,17 +185,23 @@ void http_send_client_response(int csock)
     }
 
   http_send_header_success (csock);
-  http_send_file_contents ("head.html", csock);
 
-  while (fgets (path, sizeof (path) - 1, fp) != NULL)
+  if (strlen (uri[0]) == 0)
     {
-      (void) write (csock, "\n<div>", 6);
-      (void) write (csock, path, strlen (path));
-      (void) write (csock, "</div>\n", 7);
+      http_send_file_contents ("head.html", csock);
+      http_send_file_contents ("foot.html", csock);
+    }
+  else
+    {
+      while (fgets (path, sizeof (path) - 1, fp) != NULL)
+        {
+          (void) write (csock, "\n<div>", 6);
+          (void) write (csock, path, strlen (path));
+          (void) write (csock, "</div>\n", 7);
+        }
     }
 
   pclose (fp);
-  http_send_file_contents ("foot.html", csock);
 
   exit (EXIT_SUCCESS);
 }

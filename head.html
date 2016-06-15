@@ -1,5 +1,82 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <style type="text/css">
+     #matches div {
+         background: #444;
+         color: #fff;
+         border-radius: 4px;
+         margin: 2px;
+         padding: 8px;
+     }
+     #matches div:hover {
+         background: #666;
+         cursor: pointer;
+     }
+     #matches {
+         background: maroon;
+     }
+     #loading {
+         color: orange;
+         display:none;
+         font-size:3em;
+         left:350px;
+         margin:10px;
+         position:absolute;
+         transform: rotate(7deg);
+         z-index:2;
+     }
+     #star {
+         color:maroon;
+         display:block;
+         left:15px;
+         position:absolute;
+     }
+    </style>
+    <script>
+     var timeOut = null;
+     var lastSearch = '';
+
+     function search (div)
+     {
+         clearTimeout(timeOut);
+         timeOut = null;
+
+         timeOut = setTimeout(function (e)
+             {
+                 var uri = div.value.trim().replace(/\s/g, '/');
+                 console.log(uri);
+
+                 if (uri && uri !== lastSearch) {
+                     lastSearch = uri;
+                     document.getElementById('loading').style.display = 'inline-block';
+                     xhttp = new XMLHttpRequest();
+
+                     xhttp.onreadystatechange = function () {
+                         if (xhttp.readyState == 4 && xhttp.status == 200) {
+                             var response = xhttp.responseText;
+                             document.getElementById('matches').innerHTML = response;
+                             document.getElementById('loading').style.display = 'none';
+                         }
+                     };
+                     xhttp.open('GET', uri, true);
+                     xhttp.send();
+                 }
+             }, 500);
+     }
+
+     var rot = 0;
+     function spinLoading (rot)
+     {
+         document.getElementById('star').style.transform = 'rotate(' + rot + 'deg)';
+     }
+     setInterval(function () {
+         spinLoading(rot+=15);
+     }, 50);
+    </script>
   </head>
   <body>
+    <b>Search:</b>
+    <input type="text" id='search' onkeyup='search(this);'>
+    <span id="loading"><span id="star">&#x2605;</span>Loading...</span>
+    <div id="matches">
