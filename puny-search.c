@@ -195,7 +195,7 @@ void http_send_client_response(int csock)
     {
       while (fgets (path, sizeof (path) - 1, fp) != NULL)
         {
-          (void) write (csock, "\n<div>", 6);
+          (void) write (csock, "\n<div class='locate-match'>", 28);
           (void) write (csock, path, strlen (path));
           (void) write (csock, "</div>\n", 7);
         }
