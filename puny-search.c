@@ -13,9 +13,12 @@
 
 #define MAX_ENQUEUED 20
 #define BUF_LEN 512
-#define MAX_HTML_FILE_SIZE 4096
+#define MAX_HTML_FILE_SIZE 8192
 #define PORT_STR "12321"
 #define LOCATE_CMD "/usr/bin/locate -l 30 -A "
+#define OPEN_FILE_CMD "/usr/bin/thunar "
+#define STAT_FILE_CMD "/usr/bin/stat "
+#define FILE_FILE_CMD "/usr/bin/file -b "
 
 /**
  * Send out the successful HTTP header
@@ -58,7 +61,9 @@ void http_send_file_contents (char file_name[10], int csock)
     }
 
   content[i] = '\0';
+  fclose (fp);
 
+  printf ("About to send http file content...\n");
   (void) write (csock, content, strlen (content));
 }
 
@@ -166,42 +171,115 @@ void http_send_client_response(int csock)
   char path[1035];
   char cmd[256];
 
-  strcpy(cmd, LOCATE_CMD);
-
-  for (i = 0; i <= slot; i++)
-    {
-      strcat (cmd, " ");
-      strcat (cmd, uri[i]);
-    }
-
-  printf ("Run command: %s\n", cmd);
-
-  fp = popen (cmd, "r");
-
-  if (fp == NULL)
-    {
-      fprintf (stderr, "Failed to popen\n");
-      exit (1);
-    }
-
   http_send_header_success (csock);
 
-  if (strlen (uri[0]) == 0)
+  if (strcmp (method, "POST") == 0)
     {
-      http_send_file_contents ("head.html", csock);
-      http_send_file_contents ("foot.html", csock);
+      printf ("Received a post\n");
+      strcpy (cmd, OPEN_FILE_CMD);
+
+      for (i = 0; i < slot; i++)
+        {
+          strcat (cmd, "/");
+          strcat (cmd, uri[i]);
+        }
+
+      strcat (cmd, "/");
+      system (cmd);
+    }
+  else if (strcmp (method, "PUT") == 0)
+    {
+      printf ("Received a put\n");
+      strcpy (cmd, STAT_FILE_CMD);
+
+      for (i = 0; i <= slot; i++)
+        {
+          strcat (cmd, "/");
+          strcat (cmd, uri[i]);
+        }
+
+      fp = popen (cmd, "r");
+
+      if (fp == NULL)
+        {
+          fprintf (stderr, "Failed to popen\n");
+          exit (1);
+        }
+
+      while (fgets (path, sizeof (path) - 1, fp) != NULL)
+        {
+          (void) write (csock, path, strlen (path));
+        }
+
+      pclose (fp);
+    }
+  else if (strcmp (method, "PATCH") == 0)
+    {
+      printf ("Received a patch\n");
+      strcpy (cmd, FILE_FILE_CMD);
+
+      for (i = 0; i <= slot; i++)
+        {
+          strcat (cmd, "/");
+          strcat (cmd, uri[i]);
+        }
+
+      fp = popen (cmd, "r");
+
+      if (fp == NULL)
+        {
+          fprintf (stderr, "Failed to popen\n");
+          exit (1);
+        }
+
+      while (fgets (path, sizeof (path) - 1, fp) != NULL)
+        {
+          (void) write (csock, path, strlen (path));
+        }
+
+      pclose (fp);
     }
   else
     {
-      while (fgets (path, sizeof (path) - 1, fp) != NULL)
+      printf ("Received a get\n");
+
+      if (strlen (uri[0]) == 0)
         {
-          (void) write (csock, "\n<div class='locate-match'>", 28);
-          (void) write (csock, path, strlen (path));
-          (void) write (csock, "</div>\n", 7);
+          // Here we are just sending out the basic page structure
+          http_send_file_contents ("layout.html", csock);
         }
+      else
+        {
+          // Here we are looking up a file with locate
+          strcpy(cmd, LOCATE_CMD);
+
+          for (i = 0; i <= slot; i++)
+            {
+              strcat (cmd, " ");
+              strcat (cmd, uri[i]);
+            }
+
+          printf ("Run command: %s\n", cmd);
+          fp = popen (cmd, "r");
+
+          if (fp == NULL)
+            {
+              fprintf (stderr, "Failed to popen\n");
+              exit (1);
+            }
+
+          while (fgets (path, sizeof (path) - 1, fp) != NULL)
+            {
+              (void) write (csock, "\n<div class='locate-match'>", 28);
+              (void) write (csock, path, strlen (path));
+              (void) write (csock, "</div>\n", 7);
+            }
+
+          pclose (fp);
+        }
+
     }
 
-  pclose (fp);
 
   exit (EXIT_SUCCESS);
 }
