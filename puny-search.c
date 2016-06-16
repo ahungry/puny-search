@@ -10,15 +10,12 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include "config.h"
 
 #define MAX_ENQUEUED 20
 #define BUF_LEN 512
 #define MAX_HTML_FILE_SIZE 8192
 #define PORT_STR "12321"
-#define LOCATE_CMD "/usr/bin/locate -l 30 -A "
-#define OPEN_FILE_CMD "/usr/bin/thunar "
-#define STAT_FILE_CMD "/usr/bin/stat "
-#define FILE_FILE_CMD "/usr/bin/file -b "
 
 /**
  * Send out the successful HTTP header

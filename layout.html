@@ -94,8 +94,7 @@
 
          timeOut = setTimeout(function (e)
              {
-                 uri = div.value.trim().replace(/\s/g, '/');
-                 console.log(uri);
+                 uri = div.value.trim().replace(/\s/g, '/').replace(/[^A-Za-z0-9\/]/, '');
 
                  if (uri && uri !== lastSearch && pending === false) {
                      lastSearch = uri;
